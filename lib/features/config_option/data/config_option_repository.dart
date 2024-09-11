@@ -31,7 +31,10 @@ abstract class ConfigOptions {
     mapFrom: Region.values.byName,
     mapTo: (value) => value.name,
   );
-
+  static final useXrayCoreWhenPossible = PreferencesNotifier.create<bool, bool>(
+    "use-xray-core-when-possible",
+    false,
+  );
   static final blockAds = PreferencesNotifier.create<bool, bool>(
     "block-ads",
     false,
@@ -58,6 +61,17 @@ abstract class ConfigOptions {
   static final remoteDnsAddress = PreferencesNotifier.create<String, String>(
     "remote-dns-address",
     "udp://1.1.1.1",
+    possibleValues: List.of([
+      "local",
+      "udp://223.5.5.5",
+      "udp://1.1.1.1",
+      "udp://1.1.1.2",
+      "tcp://1.1.1.1",
+      "https://1.1.1.1/dns-query",
+      "https://sky.rethinkdns.com/dns-query",
+      "4.4.2.2",
+      "8.8.8.8",
+    ]),
     validator: (value) => value.isNotBlank,
   );
 
@@ -70,7 +84,19 @@ abstract class ConfigOptions {
 
   static final directDnsAddress = PreferencesNotifier.create<String, String>(
     "direct-dns-address",
-    "1.1.1.1",
+    "udp://1.1.1.1",
+    possibleValues: List.of([
+      "local",
+      "udp://223.5.5.5",
+      "udp://1.1.1.1",
+      "udp://1.1.1.2",
+      "tcp://1.1.1.1",
+      "https://1.1.1.1/dns-query",
+      "https://sky.rethinkdns.com/dns-query",
+      "4.4.2.2",
+      "8.8.8.8",
+    ]),
+    defaultValueFunction: (ref) => ref.read(region) == Region.cn ? "223.5.5.5" : "1.1.1.1",
     validator: (value) => value.isNotBlank,
   );
 
@@ -83,25 +109,25 @@ abstract class ConfigOptions {
 
   static final mixedPort = PreferencesNotifier.create<int, int>(
     "mixed-port",
-    2334,
+    12334,
     validator: (value) => isPort(value.toString()),
   );
 
   static final tproxyPort = PreferencesNotifier.create<int, int>(
     "tproxy-port",
-    2335,
+    12335,
     validator: (value) => isPort(value.toString()),
   );
 
   static final localDnsPort = PreferencesNotifier.create<int, int>(
     "local-dns-port",
-    6450,
+    16450,
     validator: (value) => isPort(value.toString()),
   );
 
   static final tunImplementation = PreferencesNotifier.create<TunImplementation, String>(
     "tun-implementation",
-    TunImplementation.mixed,
+    TunImplementation.gvisor,
     mapFrom: TunImplementation.values.byName,
     mapTo: (value) => value.name,
   );
@@ -112,7 +138,18 @@ abstract class ConfigOptions {
 
   static final connectionTestUrl = PreferencesNotifier.create<String, String>(
     "connection-test-url",
-    "http://connectivitycheck.gstatic.com/generate_204",
+    "http://cp.cloudflare.com",
+    possibleValues: List.of([
+      "http://connectivitycheck.gstatic.com/generate_204",
+      "http://www.gstatic.com/generate_204",
+      "https://www.gstatic.com/generate_204",
+      "http://cp.cloudflare.com",
+      "http://kernel.org",
+      "http://detectportal.firefox.com",
+      "http://captive.apple.com/hotspot-detect.html",
+      "https://1.1.1.1",
+      "http://1.1.1.1",
+    ]),
     validator: (value) => value.isNotBlank && isUrl(value),
   );
 
@@ -130,7 +167,7 @@ abstract class ConfigOptions {
 
   static final clashApiPort = PreferencesNotifier.create<int, int>(
     "clash-api-port",
-    6756,
+    16756,
     validator: (value) => isPort(value.toString()),
   );
 
@@ -163,14 +200,14 @@ abstract class ConfigOptions {
 
   static final tlsFragmentSize = PreferencesNotifier.create<OptionalRange, String>(
     "tls-fragment-size",
-    const OptionalRange(min: 1, max: 500),
+    const OptionalRange(min: 10, max: 30),
     mapFrom: OptionalRange.parse,
     mapTo: const OptionalRangeJsonConverter().toJson,
   );
 
   static final tlsFragmentSleep = PreferencesNotifier.create<OptionalRange, String>(
     "tls-fragment-sleep",
-    const OptionalRange(min: 0, max: 500),
+    const OptionalRange(min: 2, max: 8),
     mapFrom: OptionalRange.parse,
     mapTo: const OptionalRangeJsonConverter().toJson,
   );
@@ -267,14 +304,24 @@ abstract class ConfigOptions {
 
   static final warpNoise = PreferencesNotifier.create<OptionalRange, String>(
     "warp-noise",
-    const OptionalRange(min: 5, max: 10),
+    const OptionalRange(min: 1, max: 3),
     mapFrom: (value) => OptionalRange.parse(value, allowEmpty: true),
     mapTo: const OptionalRangeJsonConverter().toJson,
+  );
+  static final warpNoiseMode = PreferencesNotifier.create<String, String>(
+    "warp-noise-mode",
+    "m4",
   );
 
   static final warpNoiseDelay = PreferencesNotifier.create<OptionalRange, String>(
     "warp-noise-delay",
-    const OptionalRange(min: 20, max: 200),
+    const OptionalRange(min: 10, max: 30),
+    mapFrom: (value) => OptionalRange.parse(value, allowEmpty: true),
+    mapTo: const OptionalRangeJsonConverter().toJson,
+  );
+  static final warpNoiseSize = PreferencesNotifier.create<OptionalRange, String>(
+    "warp-noise-size",
+    const OptionalRange(min: 10, max: 30),
     mapFrom: (value) => OptionalRange.parse(value, allowEmpty: true),
     mapTo: const OptionalRangeJsonConverter().toJson,
   );
@@ -317,6 +364,7 @@ abstract class ConfigOptions {
   static final Map<String, StateNotifierProvider<PreferencesNotifier, dynamic>> preferences = {
     "region": region,
     "block-ads": blockAds,
+    "use-xray-core-when-possible": useXrayCoreWhenPossible,
     "service-mode": serviceMode,
     "log-level": logLevel,
     "resolve-destination": resolveDestination,
@@ -361,6 +409,8 @@ abstract class ConfigOptions {
     "warp.clean-ip": warpCleanIp,
     "warp.clean-port": warpPort,
     "warp.noise": warpNoise,
+    "warp.noise-size": warpNoiseSize,
+    "warp.noise-mode": warpNoiseMode,
     "warp.noise-delay": warpNoiseDelay,
     "warp.wireguard-config": warpWireguardConfig,
     "warp2.license-key": warp2LicenseKey,
@@ -402,6 +452,13 @@ abstract class ConfigOptions {
       //         outbound: RuleOutbound.bypass,
       //       ),
       //     ],
+      //   Region.id => [
+      //       const SingboxRule(
+      //         domains: "domain:.id,geosite:id",
+      //         ip: "geoip:id",
+      //         outbound: RuleOutbound.bypass,
+      //       ),
+      //     ],
       //   _ => <SingboxRule>[],
       // };
 
@@ -411,6 +468,7 @@ abstract class ConfigOptions {
       return SingboxConfigOption(
         region: ref.watch(region).name,
         blockAds: ref.watch(blockAds),
+        useXrayCoreWhenPossible: ref.watch(useXrayCoreWhenPossible),
         executeConfigAsIs: false,
         logLevel: ref.watch(logLevel),
         resolveDestination: ref.watch(resolveDestination),
@@ -461,6 +519,8 @@ abstract class ConfigOptions {
           cleanIp: ref.watch(warpCleanIp),
           cleanPort: ref.watch(warpPort),
           noise: ref.watch(warpNoise),
+          noiseMode: ref.watch(warpNoiseMode),
+          noiseSize: ref.watch(warpNoiseSize),
           noiseDelay: ref.watch(warpNoiseDelay),
         ),
         warp2: SingboxWarpOption(
@@ -473,6 +533,8 @@ abstract class ConfigOptions {
           cleanIp: ref.watch(warpCleanIp),
           cleanPort: ref.watch(warpPort),
           noise: ref.watch(warpNoise),
+          noiseMode: ref.watch(warpNoiseMode),
+          noiseSize: ref.watch(warpNoiseSize),
           noiseDelay: ref.watch(warpNoiseDelay),
         ),
         // geoipPath: ref.watch(geoAssetPathResolverProvider).relativePath(

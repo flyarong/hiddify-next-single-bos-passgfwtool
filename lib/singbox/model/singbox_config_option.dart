@@ -18,6 +18,7 @@ class SingboxConfigOption with _$SingboxConfigOption {
   const factory SingboxConfigOption({
     required String region,
     required bool blockAds,
+    required bool useXrayCoreWhenPossible,
     required bool executeConfigAsIs,
     required LogLevel logLevel,
     required bool resolveDestination,
@@ -74,7 +75,9 @@ class SingboxWarpOption with _$SingboxWarpOption {
     required String cleanIp,
     required int cleanPort,
     @OptionalRangeJsonConverter() required OptionalRange noise,
+    @OptionalRangeJsonConverter() required OptionalRange noiseSize,
     @OptionalRangeJsonConverter() required OptionalRange noiseDelay,
+    @OptionalRangeJsonConverter() required String noiseMode,
   }) = _SingboxWarpOption;
 
   factory SingboxWarpOption.fromJson(Map<String, dynamic> json) => _$SingboxWarpOptionFromJson(json);
